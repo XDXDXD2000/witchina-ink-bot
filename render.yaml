@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: witchina-ink-bot
+    runtime: python
+    repo: https://github.com/XDXDXD2000/witchina-ink-bot
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: python start.py
+    envVars:
+      - key: BOT_TOKEN
+        value: 8833234277:AAFil5ZSPVYqoZhkS6OniM1EpaxHdBbmLRA
+      - key: ADMIN_ID
+        value: 623268834
+      - key: PORT
+        value: 10000
