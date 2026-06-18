@@ -2,7 +2,6 @@ services:
   - type: web
     name: witchina-ink-bot
     runtime: python
-    repo: https://github.com/XDXDXD2000/witchina-ink-bot
     plan: free
     region: oregon
     buildCommand: pip install -r requirements.txt
