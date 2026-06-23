@@ -4,17 +4,12 @@ import sys
 from datetime import datetime
 
 from aiogram import Bot, Dispatcher
-from aiogram.types import DefaultBotProperties
+from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 
-from config import BOT_TOKEN, REMIND_HOURS_BEFORE, ADMIN_ID
-from db import db
-from handlers import router
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+# ... потом в коде, где создаётся бот:
+bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler("bot.log"),
         logging.StreamHandler(sys.stdout)
@@ -52,10 +47,7 @@ async def send_reminders(bot: Bot):
             logger.error(f"Ошибка планировщика: {e}")
 
 async def main():
-    bot = Bot(
-        token=BOT_TOKEN,
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
-    )
+bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
     dp = Dispatcher(storage=MemoryStorage())
     dp.include_router(router)
     asyncio.create_task(send_reminders(bot))
