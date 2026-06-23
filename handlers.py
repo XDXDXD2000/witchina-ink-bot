@@ -2,6 +2,7 @@ import re
 import logging
 import random
 import os
+import asyncio
 from datetime import datetime, timedelta
 
 from aiogram import Router, F
@@ -28,6 +29,10 @@ from keyboards import (
 
 router = Router()
 logger = logging.getLogger(__name__)
+
+# ========== СПИСОК АДМИНОВ ==========
+# Добавь сюда ID всех админов
+ADMIN_IDS = [623268834, 566312940]  # Твои ID
 
 # ========== ЦИТАТЫ ==========
 
@@ -66,7 +71,7 @@ async def get_cached_users():
     """Получает список всех пользователей, кто когда-либо записывался"""
     global _users_cache, _users_cache_time
     now = datetime.now()
-    if _users_cache_time is None or (now - _users_cache_time).seconds > 300:  # 5 минут кэш
+    if _users_cache_time is None or (now - _users_cache_time).seconds > 300:
         _users_cache = await db.get_all_users()
         _users_cache_time = now
     return _users_cache
@@ -132,7 +137,7 @@ async def cmd_start(message: Message, state: FSMContext):
     name = message.from_user.first_name or "Чувак"
     
     # Если админ — показываем админ-меню
-    if message.from_user.id == ADMIN_ID:
+    if message.from_user.id in ADMIN_IDS:
         text = f"Йоу, {name}! 👋\n\nДобро пожаловать в админ-панель «Витчина INK»"
         await message.answer(text, reply_markup=get_admin_main_keyboard(), parse_mode="HTML")
         return
@@ -151,7 +156,7 @@ async def cmd_start(message: Message, state: FSMContext):
 @router.message(Command("menu"))
 async def cmd_menu(message: Message, state: FSMContext):
     await state.clear()
-    if message.from_user.id == ADMIN_ID:
+    if message.from_user.id in ADMIN_IDS:
         await message.answer("Админ-панель", reply_markup=get_admin_main_keyboard())
     else:
         await message.answer("Главное меню", reply_markup=get_main_keyboard())
@@ -162,7 +167,7 @@ async def cmd_menu(message: Message, state: FSMContext):
 async def back_to_main(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.delete()
-    if callback.from_user.id == ADMIN_ID:
+    if callback.from_user.id in ADMIN_IDS:
         await callback.message.answer("Админ-панель", reply_markup=get_admin_main_keyboard())
     else:
         await callback.message.answer("Главное меню", reply_markup=get_main_keyboard())
@@ -172,7 +177,7 @@ async def back_to_main(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data == "admin_panel")
 async def admin_panel(callback: CallbackQuery, state: FSMContext):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         await callback.answer("⛔ Доступ запрещён!", show_alert=True)
         return
     await state.clear()
@@ -189,7 +194,7 @@ async def admin_panel(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data == "admin_mailing")
 async def admin_mailing(callback: CallbackQuery, state: FSMContext):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         await callback.answer("⛔ Доступ запрещён!", show_alert=True)
         return
     await state.set_state(AdminStates.mailing_text)
@@ -205,7 +210,7 @@ async def admin_mailing(callback: CallbackQuery, state: FSMContext):
 
 @router.message(AdminStates.mailing_text)
 async def process_mailing_text(message: Message, state: FSMContext):
-    if message.from_user.id != ADMIN_ID:
+    if message.from_user.id not in ADMIN_IDS:
         await message.answer("⛔ Доступ запрещён!")
         await state.clear()
         return
@@ -213,7 +218,6 @@ async def process_mailing_text(message: Message, state: FSMContext):
     text = message.text
     await state.update_data(mailing_text=text)
     
-    # Получаем всех пользователей
     users = await get_cached_users()
     
     if not users:
@@ -227,13 +231,13 @@ async def process_mailing_text(message: Message, state: FSMContext):
         f"Текст сообщения:\n{text[:200]}{'...' if len(text) > 200 else ''}\n\n"
         f"👥 Получателей: {len(users)}\n\n"
         f"Отправить?",
-        reply_markup=get_yes_no_keyboard(0),  # 0 - для рассылки
+        reply_markup=get_yes_no_keyboard(0),
         parse_mode="HTML"
     )
 
 @router.callback_query(AdminStates.mailing_confirm, F.data == "approve_0")
 async def confirm_mailing(callback: CallbackQuery, state: FSMContext):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         await callback.answer("⛔ Доступ запрещён!", show_alert=True)
         return
     
@@ -270,7 +274,6 @@ async def confirm_mailing(callback: CallbackQuery, state: FSMContext):
             logger.error(f"Ошибка отправки пользователю {user['user_id']}: {e}")
             failed += 1
         
-        # Маленькая задержка, чтобы не заблокировали
         await asyncio.sleep(0.1)
     
     await state.clear()
@@ -286,7 +289,7 @@ async def confirm_mailing(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(AdminStates.mailing_confirm, F.data == "reject_0")
 async def cancel_mailing(callback: CallbackQuery, state: FSMContext):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         await callback.answer("⛔ Доступ запрещён!", show_alert=True)
         return
     
@@ -599,7 +602,7 @@ async def enter_description(message: Message, state: FSMContext):
         parse_mode="HTML"
     )
 
-# ========== ПОДТВЕРЖДЕНИЕ (ИСПРАВЛЕНО) ==========
+# ========== ПОДТВЕРЖДЕНИЕ ==========
 
 @router.callback_query(BookingStates.confirming, F.data == "confirm_yes")
 async def confirm_booking(callback: CallbackQuery, state: FSMContext):
@@ -629,18 +632,20 @@ async def confirm_booking(callback: CallbackQuery, state: FSMContext):
             reply_markup=get_main_keyboard(),
             parse_mode="HTML"
         )
-        try:
-            admin_text = (
-                f"📅 Новая запись!\n"
-                f"Пользователь: @{username or 'без юзернейма'}\n"
-                f"Телефон: {data.get('phone')}\n"
-                f"Время: {data.get('slot_iso')}\n"
-                f"Описание: {data.get('description', 'Без описания')}\n"
-                f"Скидка: {data.get('discount', 0)}%"
-            )
-            await callback.bot.send_message(ADMIN_ID, admin_text)
-        except:
-            pass
+        # Уведомление ВСЕМ админам
+        for admin_id in ADMIN_IDS:
+            try:
+                admin_text = (
+                    f"📅 Новая запись!\n"
+                    f"Пользователь: @{username or 'без юзернейма'}\n"
+                    f"Телефон: {data.get('phone')}\n"
+                    f"Время: {data.get('slot_iso')}\n"
+                    f"Описание: {data.get('description', 'Без описания')}\n"
+                    f"Скидка: {data.get('discount', 0)}%"
+                )
+                await callback.bot.send_message(admin_id, admin_text)
+            except:
+                pass
     else:
         await callback.message.delete()
         await callback.message.answer(
@@ -704,7 +709,7 @@ async def cancel_booking_app(callback: CallbackQuery):
 
 @router.callback_query(F.data == "reviews_menu")
 async def reviews_menu(callback: CallbackQuery):
-    is_admin = callback.from_user.id == ADMIN_ID
+    is_admin = callback.from_user.id in ADMIN_IDS
     
     builder = InlineKeyboardBuilder()
     builder.button(text="⭐ Посмотреть", callback_data="show_reviews")
@@ -784,17 +789,19 @@ async def review_text(message: Message, state: FSMContext):
     await state.clear()
     await message.answer("✅ Спасибо! Отзыв пройдёт модерацию.", reply_markup=get_main_keyboard())
     
-    try:
-        admin_text = f"📝 Новый отзыв!\n@{username}\nОценка: {rating}/5\nТекст: {message.text}"
-        await message.bot.send_message(ADMIN_ID, admin_text)
-    except:
-        pass
+    # Уведомление ВСЕМ админам
+    for admin_id in ADMIN_IDS:
+        try:
+            admin_text = f"📝 Новый отзыв!\n@{username}\nОценка: {rating}/5\nТекст: {message.text}"
+            await message.bot.send_message(admin_id, admin_text)
+        except:
+            pass
 
 # ========== МОДЕРАЦИЯ ОТЗЫВОВ ==========
 
 @router.callback_query(F.data == "moderate_reviews")
 async def moderate_reviews(callback: CallbackQuery):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         await callback.answer("⛔ Только для админа!", show_alert=True)
         return
     
@@ -815,7 +822,7 @@ async def moderate_reviews(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("review_"))
 async def review_detail(callback: CallbackQuery):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         await callback.answer("⛔ Только для админа!", show_alert=True)
         return
     
@@ -846,7 +853,7 @@ async def review_detail(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("approve_"))
 async def approve_review(callback: CallbackQuery):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         await callback.answer("⛔ Только для админа!", show_alert=True)
         return
     
@@ -858,7 +865,7 @@ async def approve_review(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("reject_"))
 async def reject_review(callback: CallbackQuery):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         await callback.answer("⛔ Только для админа!", show_alert=True)
         return
     
