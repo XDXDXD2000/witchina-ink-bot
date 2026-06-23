@@ -54,7 +54,7 @@ async def main():
     except:
         pass
     try:
-        await dp.start_polling(bot)
+        await dp.start_polling(bot, handle_signals=False)  # <--- ЭТО ВАЖНО!
     finally:
         await bot.session.close()
 

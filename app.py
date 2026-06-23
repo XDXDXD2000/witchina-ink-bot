@@ -1,6 +1,6 @@
 import os
-import threading
 import asyncio
+import threading
 from flask import Flask
 from main import main
 
@@ -15,12 +15,14 @@ def health():
     return "OK", 200
 
 def run_bot():
-    asyncio.run(main())
+    # Создаём новый event loop в потоке
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(main())
 
 if __name__ == "__main__":
     # Запускаем бота в отдельном потоке
-    bot_thread = threading.Thread(target=run_bot)
-    bot_thread.daemon = True
+    bot_thread = threading.Thread(target=run_bot, daemon=True)
     bot_thread.start()
     
     # Запускаем веб-сервер
