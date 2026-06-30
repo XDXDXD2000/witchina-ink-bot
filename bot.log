@@ -1,0 +1,27 @@
+2026-06-20 23:01:52,970 - aiogram.dispatcher - INFO - Start polling
+2026-06-20 23:01:53,284 - aiogram.dispatcher - INFO - Run polling for bot @w1tch1naTatooBOT id=8833234277 - 'витчина | BOT |'
+2026-06-20 23:01:53,746 - aiogram.event - INFO - Update id=892848069 is handled. Duration 381 ms by bot id=8833234277
+2026-06-20 23:01:53,779 - aiogram.event - INFO - Update id=892848068 is handled. Duration 416 ms by bot id=8833234277
+2026-06-20 23:02:03,067 - aiogram.event - INFO - Update id=892848070 is handled. Duration 299 ms by bot id=8833234277
+2026-06-20 23:02:06,793 - aiogram.event - INFO - Update id=892848071 is handled. Duration 266 ms by bot id=8833234277
+2026-06-20 23:02:13,373 - aiogram.event - INFO - Update id=892848072 is handled. Duration 336 ms by bot id=8833234277
+2026-06-20 23:02:15,316 - aiogram.event - INFO - Update id=892848073 is handled. Duration 271 ms by bot id=8833234277
+2026-06-20 23:02:23,127 - aiogram.event - INFO - Update id=892848074 is handled. Duration 107 ms by bot id=8833234277
+2026-06-20 23:02:30,380 - aiogram.event - INFO - Update id=892848075 is handled. Duration 210 ms by bot id=8833234277
+2026-06-20 23:02:36,888 - aiogram.event - INFO - Update id=892848076 is handled. Duration 155 ms by bot id=8833234277
+2026-06-20 23:02:39,553 - aiogram.event - INFO - Update id=892848077 is handled. Duration 437 ms by bot id=8833234277
+2026-06-20 23:03:01,918 - aiogram.event - INFO - Update id=892848078 is handled. Duration 250 ms by bot id=8833234277
+2026-06-20 23:03:03,716 - aiogram.event - INFO - Update id=892848079 is handled. Duration 262 ms by bot id=8833234277
+2026-06-20 23:03:05,848 - aiogram.event - INFO - Update id=892848080 is handled. Duration 460 ms by bot id=8833234277
+2026-06-20 23:03:11,485 - aiogram.event - INFO - Update id=892848081 is handled. Duration 261 ms by bot id=8833234277
+2026-06-20 23:03:14,356 - aiogram.event - INFO - Update id=892848082 is handled. Duration 689 ms by bot id=8833234277
+2026-06-20 23:03:20,795 - aiogram.event - INFO - Update id=892848083 is handled. Duration 659 ms by bot id=8833234277
+2026-06-20 23:03:34,603 - aiogram.event - INFO - Update id=892848084 is handled. Duration 276 ms by bot id=8833234277
+2026-06-20 23:03:38,111 - aiogram.event - INFO - Update id=892848085 is handled. Duration 536 ms by bot id=8833234277
+2026-06-20 23:03:40,834 - aiogram.event - INFO - Update id=892848086 is handled. Duration 254 ms by bot id=8833234277
+2026-06-20 23:03:42,285 - aiogram.event - INFO - Update id=892848087 is handled. Duration 259 ms by bot id=8833234277
+2026-06-20 23:03:49,652 - aiogram.event - INFO - Update id=892848088 is handled. Duration 302 ms by bot id=8833234277
+2026-06-20 23:03:55,870 - aiogram.dispatcher - INFO - Polling stopped
+2026-06-20 23:03:55,870 - aiogram.dispatcher - ERROR - Failed to fetch updates - TelegramNetworkError: HTTP Client says - ServerDisconnectedError: Server disconnected
+2026-06-20 23:03:55,871 - aiogram.dispatcher - WARNING - Sleep for 1.000000 seconds and try again... (tryings = 0, bot id = 8833234277)
+2026-06-20 23:03:56,128 - aiogram.dispatcher - INFO - Polling stopped for bot @w1tch1naTatooBOT id=8833234277 - 'витчина | BOT |'

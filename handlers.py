@@ -123,10 +123,11 @@ def format_prices():
     return (
         "💰 <b>Прайс-лист студии</b>\n\n"
         "• Консультация — БЕСПЛАТНО\n"
-        "• Минимализм — от 2000 руб.\n"
-        "• До 20 см — от 6000 руб.\n"
-        "• Цветная — от 4000 руб.\n"
-        "• 20 см и более — от 9000 руб."
+        "• Татуировка в стиле минимализм — от 2000 руб.\n"
+        "• Татуировка до 20 см — от 6000 руб.\n"
+        "• Цветная татуировка — от 4000 руб.\n"
+        "• Татуировка 20 см и более — от 9000 руб.\n\n"
+        "⚠️ <i>Цены являются приблизительными и могут меняться в зависимости от сложности, времени работы и других факторов. Точную стоимость уточняйте на консультации с мастером.</i>"
     )
 
 # ========== ОСНОВНЫЕ КОМАНДЫ ==========
@@ -693,17 +694,7 @@ async def my_bookings(callback: CallbackQuery):
     )
     await callback.answer()
 
-@router.callback_query(F.data.startswith("cancel_"))
-async def cancel_booking_app(callback: CallbackQuery):
-    appointment_id = int(callback.data.split("_")[1])
-    user_id = callback.from_user.id
-    success = await db.cancel_appointment(appointment_id, user_id)
-    await callback.message.delete()
-    if success:
-        await callback.message.answer("✅ Отменено", reply_markup=get_main_keyboard())
-    else:
-        await callback.message.answer("❌ Ошибка", reply_markup=get_main_keyboard())
-    await callback.answer()
+()
 
 # ========== ОТЗЫВЫ ==========
 
@@ -873,4 +864,108 @@ async def reject_review(callback: CallbackQuery):
     success = await db.moderate_review(review_id, "rejected")
     await callback.message.delete()
     await callback.message.answer("❌ Отклонено" if success else "❌ Ошибка", reply_markup=get_back_keyboard())
+    await callback.answer()
+@router.callback_query(F.data == "admin_all_bookings")
+async def admin_all_bookings(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS:
+        await callback.answer("⛔ Только для админа!", show_alert=True)
+        return
+    
+    appointments = await db.get_all_appointments()
+    
+    if not appointments:
+        await callback.message.delete()
+        await callback.message.answer(
+            "📋 Нет активных записей.",
+            reply_markup=get_back_keyboard()
+        )
+        await callback.answer()
+        return
+    
+    text = "📋 <b>Все записи</b>\n\n"
+    for app in appointments:
+        date_time = app["slot_start"].replace("T", " ")[:16]
+        text += f"🕐 {date_time}\n"
+        text += f"🎨 Услуга: {app['service_name']}\n"
+        text += f"👤 Пользователь: @{app['username'] or 'без юзернейма'}\n"
+        text += f"📞 Телефон: {app['phone']}\n"
+        if app.get('description'):
+            text += f"✍️ Описание: {app['description'][:50]}...\n"
+        if app.get('discount_percent', 0) > 0:
+            text += f"💰 Скидка: {app['discount_percent']}%\n"
+        text += "-" * 20 + "\n"
+    
+    await callback.message.delete()
+    await callback.message.answer(
+        text,
+        reply_markup=get_back_keyboard(),
+        parse_mode="HTML"
+    )
+    await callback.answer()
+@router.callback_query(F.data.startswith("cancel_"))
+async def cancel_booking_app(callback: CallbackQuery):
+    appointment_id = int(callback.data.split("_")[1])
+    user_id = callback.from_user.id
+    
+    # Получаем информацию о записи ДО отмены
+    appointment = await db.get_appointment_by_id(appointment_id)
+    
+    success = await db.cancel_appointment(appointment_id, user_id)
+    await callback.message.delete()
+    
+    if success:
+        await callback.message.answer("✅ Отменено", reply_markup=get_main_keyboard())
+        
+        # Уведомление ВСЕМ админам
+        for admin_id in ADMIN_IDS:
+            try:
+                admin_text = (
+                    f"❌ <b>Отмена записи!</b>\n\n"
+                    f"Пользователь: @{appointment['username'] or 'без юзернейма'}\n"
+                    f"Телефон: {appointment['phone']}\n"
+                    f"Время: {appointment['slot_start'].replace('T', ' ')[:16]}\n"
+                    f"Услуга: {appointment['service_name']}"
+                )
+                await callback.bot.send_message(admin_id, admin_text, parse_mode="HTML")
+            except:
+                pass
+    else:
+        await callback.message.answer("❌ Ошибка", reply_markup=get_main_keyboard())
+    await callback.answer()
+        
+        # Уведомление ВСЕМ админам
+        for admin_id in ADMIN_IDS:
+            try:
+                admin_text = (
+                    f"❌ <b>Отмена записи!</b>\n\n"
+                    f"Пользователь: @{appointment['username'] or 'без юзернейма'}\n"
+                    f"Телефон: {appointment['phone']}\n"
+                    f"Время: {appointment['slot_start'].replace('T', ' ')[:16]}\n"
+                    f"Услуга: {appointment['service_name']}"
+                )
+                await callback.bot.send_message(admin_id, admin_text, parse_mode="HTML")
+            except:
+                pass
+    else:
+        await callback.message.delete()
+        await callback.message.answer("❌ Ошибка", reply_markup=get_main_keyboard())
+    await callback.answer()
+@router.callback_query(F.data == "back_to_dates")
+async def back_to_dates(callback: CallbackQuery, state: FSMContext):
+    dates = get_available_dates()
+    if not dates:
+        await callback.message.delete()
+        await callback.message.answer(
+            "😕 Сейчас нет свободных дат. Попробуй позже!",
+            reply_markup=get_back_keyboard()
+        )
+        await callback.answer()
+        return
+    await state.set_state(BookingStates.choosing_date)
+    await callback.message.delete()
+    await callback.message.answer(
+        "📅 <b>Выбери дату</b>\n\nРаботаем только ПН-ЧТ с 18:00 до 22:00.",
+        reply_markup=get_dates_keyboard(dates),
+        parse_mode="HTML"
+    )
     await callback.answer()
