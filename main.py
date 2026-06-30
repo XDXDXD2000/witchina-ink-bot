@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 async def send_reminders(bot: Bot):
     while True:
         await asyncio.sleep(60)
-        appointments = await db.get_appointments_for_reminder(REMIND_HOURS_BEFORE)
+        appointments = db.get_appointments_for_reminder(REMIND_HOURS_BEFORE)
         for app in appointments:
             try:
                 user_id = app["user_id"]
@@ -38,7 +38,7 @@ async def send_reminders(bot: Bot):
                     f"📍 Адрес: Московская 158/2"
                 )
                 await bot.send_message(user_id, message)
-                await db.mark_reminder_sent(app["id"])
+                db.mark_reminder_sent(app["id"])
                 logger.info(f"Напоминание отправлено для #{app['id']}")
             except Exception as e:
                 logger.error(f"Ошибка напоминания: {e}")
@@ -55,7 +55,7 @@ async def main():
     except:
         pass
     try:
-        await dp.start_polling(bot, handle_signals=False)  # <--- ЭТО ВАЖНО!
+        await dp.start_polling(bot, handle_signals=False)
     finally:
         await bot.session.close()
 

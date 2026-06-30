@@ -89,14 +89,27 @@ def format_phone(phone: str) -> str:
 def get_available_dates():
     now = datetime.now()
     dates = []
+    months = {
+        1: "янв", 2: "фев", 3: "мар", 4: "апр",
+        5: "май", 6: "июн", 7: "июл", 8: "авг",
+        9: "сен", 10: "окт", 11: "ноя", 12: "дек"
+    }
+    weekdays_short = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"]
+    
     for i in range(MAX_ADVANCE_DAYS + 1):
         date = now + timedelta(days=i)
         if date.weekday() not in WORK_DAYS:
             continue
         if date < now + timedelta(hours=MIN_ADVANCE_HOURS):
             continue
-        weekday_names = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"]
-        dates.append((date.strftime("%Y-%m-%d"), weekday_names[date.weekday()]))
+        
+        day = date.day
+        month = months[date.month]
+        weekday = weekdays_short[date.weekday()]
+        
+        date_str = date.strftime("%Y-%m-%d")
+        display_str = f"{weekday} {day}.{month}"  # Пример: "ПН 6.июл"
+        dates.append((date_str, display_str))
     return dates
 
 def get_random_sketch():
@@ -169,6 +182,18 @@ async def back_to_main(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer("Админ-панель", reply_markup=get_admin_main_keyboard())
     else:
         await callback.message.answer("Главное меню", reply_markup=get_main_keyboard())
+    await callback.answer()
+
+@router.callback_query(F.data == "back_to_services")
+async def back_to_services(callback: CallbackQuery, state: FSMContext):
+    services = await get_cached_services()
+    await state.set_state(BookingStates.choosing_service)
+    await callback.message.delete()
+    await callback.message.answer(
+        "🎨 <b>Выбери услугу</b>\n\nОт консультации до большой работы",
+        reply_markup=get_services_keyboard(services),
+        parse_mode="HTML"
+    )
     await callback.answer()
 
 # ========== АДМИН-ПАНЕЛЬ ==========
