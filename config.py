@@ -48,3 +48,6 @@ SKETCHES_PATH = "sketches"
 STUDIO_PATH = "stydiya"  # Папка с фото студии
 
 PINTEREST_LINK = "https://ru.pinterest.com/hersplanetajopa/тати/?invite_code=3704bce89bb24709ab84638b19e75e7f&sender=761249280672518271"
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
