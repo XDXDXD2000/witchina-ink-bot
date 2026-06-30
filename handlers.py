@@ -31,8 +31,7 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 # ========== СПИСОК АДМИНОВ ==========
-# Добавь сюда ID всех админов
-ADMIN_IDS = [623268834, 566312940]  # Твои ID
+ADMIN_IDS = [623268834, 566312940]
 
 # ========== ЦИТАТЫ ==========
 
@@ -68,7 +67,6 @@ async def get_cached_services():
     return _services_cache
 
 async def get_cached_users():
-    """Получает список всех пользователей, кто когда-либо записывался"""
     global _users_cache, _users_cache_time
     now = datetime.now()
     if _users_cache_time is None or (now - _users_cache_time).seconds > 300:
@@ -137,7 +135,6 @@ async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
     name = message.from_user.first_name or "Чувак"
     
-    # Если админ — показываем админ-меню
     if message.from_user.id in ADMIN_IDS:
         text = f"Йоу, {name}! 👋\n\nДобро пожаловать в админ-панель «Витчина INK»"
         await message.answer(text, reply_markup=get_admin_main_keyboard(), parse_mode="HTML")
@@ -633,7 +630,6 @@ async def confirm_booking(callback: CallbackQuery, state: FSMContext):
             reply_markup=get_main_keyboard(),
             parse_mode="HTML"
         )
-        # Уведомление ВСЕМ админам
         for admin_id in ADMIN_IDS:
             try:
                 admin_text = (
@@ -694,7 +690,36 @@ async def my_bookings(callback: CallbackQuery):
     )
     await callback.answer()
 
-()
+# ========== ОТМЕНА ЗАПИСИ ==========
+
+@router.callback_query(F.data.startswith("cancel_"))
+async def cancel_booking_app(callback: CallbackQuery):
+    appointment_id = int(callback.data.split("_")[1])
+    user_id = callback.from_user.id
+    
+    appointment = await db.get_appointment_by_id(appointment_id)
+    
+    success = await db.cancel_appointment(appointment_id, user_id)
+    await callback.message.delete()
+    
+    if success:
+        await callback.message.answer("✅ Отменено", reply_markup=get_main_keyboard())
+        
+        for admin_id in ADMIN_IDS:
+            try:
+                admin_text = (
+                    f"❌ <b>Отмена записи!</b>\n\n"
+                    f"Пользователь: @{appointment['username'] or 'без юзернейма'}\n"
+                    f"Телефон: {appointment['phone']}\n"
+                    f"Время: {appointment['slot_start'].replace('T', ' ')[:16]}\n"
+                    f"Услуга: {appointment['service_name']}"
+                )
+                await callback.bot.send_message(admin_id, admin_text, parse_mode="HTML")
+            except:
+                pass
+    else:
+        await callback.message.answer("❌ Ошибка", reply_markup=get_main_keyboard())
+    await callback.answer()
 
 # ========== ОТЗЫВЫ ==========
 
@@ -780,7 +805,6 @@ async def review_text(message: Message, state: FSMContext):
     await state.clear()
     await message.answer("✅ Спасибо! Отзыв пройдёт модерацию.", reply_markup=get_main_keyboard())
     
-    # Уведомление ВСЕМ админам
     for admin_id in ADMIN_IDS:
         try:
             admin_text = f"📝 Новый отзыв!\n@{username}\nОценка: {rating}/5\nТекст: {message.text}"
@@ -865,6 +889,9 @@ async def reject_review(callback: CallbackQuery):
     await callback.message.delete()
     await callback.message.answer("❌ Отклонено" if success else "❌ Ошибка", reply_markup=get_back_keyboard())
     await callback.answer()
+
+# ========== ВСЕ ЗАПИСИ ==========
+
 @router.callback_query(F.data == "admin_all_bookings")
 async def admin_all_bookings(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS:
@@ -902,40 +929,9 @@ async def admin_all_bookings(callback: CallbackQuery):
         parse_mode="HTML"
     )
     await callback.answer()
-@router.callback_query(F.data.startswith("cancel_"))
-async def cancel_booking_app(callback: CallbackQuery):
-    appointment_id = int(callback.data.split("_")[1])
-    user_id = callback.from_user.id
-    
-    # Получаем информацию о записи ДО отмены
-    appointment = await db.get_appointment_by_id(appointment_id)
-    
-    success = await db.cancel_appointment(appointment_id, user_id)
-    await callback.message.delete()
-    
-    if success:
-        await callback.message.answer("✅ Отменено", reply_markup=get_main_keyboard())
 
-        await callback.message.answer("❌ Ошибка", reply_markup=get_main_keyboard())
-    await callback.answer()
-        
-        # Уведомление ВСЕМ админам
-   for admin_id in ADMIN_IDS:
-       try:
-           admin_text = (
-                    f"❌ <b>Отмена записи!</b>\n\n"
-                    f"Пользователь: @{appointment['username'] or 'без юзернейма'}\n"
-                    f"Телефон: {appointment['phone']}\n"
-                    f"Время: {appointment['slot_start'].replace('T', ' ')[:16]}\n"
-                    f"Услуга: {appointment['service_name']}"
-                )
-           await callback.bot.send_message(admin_id, admin_text, parse_mode="HTML")
-            except:
-                pass
-    else:
-        await callback.message.delete()
-        await callback.message.answer("❌ Ошибка", reply_markup=get_main_keyboard())
-    await callback.answer()
+# ========== ДРУГАЯ ДАТА ==========
+
 @router.callback_query(F.data == "back_to_dates")
 async def back_to_dates(callback: CallbackQuery, state: FSMContext):
     dates = get_available_dates()
