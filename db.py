@@ -44,7 +44,6 @@ class Database:
                          service_id: int, slot_start: str, description: str = "",
                          secret_used: str = None, discount_percent: int = 0) -> Optional[int]:
         try:
-            # Проверяем, не занято ли время
             existing = self.supabase.table('appointments')\
                 .select('id')\
                 .eq('slot_start', slot_start)\
@@ -159,13 +158,21 @@ class Database:
         target_time_str = target_time.strftime("%Y-%m-%dT%H:00:00")
         
         response = self.supabase.table('appointments')\
-            .select('*, services(name as service_name)')\
+            .select('*')\
             .eq('status', 'booked')\
             .eq('reminder_sent', False)\
             .execute()
         
         result = []
         for row in response.data:
+            service_response = self.supabase.table('services')\
+                .select('name')\
+                .eq('id', row['service_id'])\
+                .execute()
+            service_name = service_response.data[0]['name'] if service_response.data else "Неизвестно"
+            
+            row['service_name'] = service_name
+            
             if row['slot_start'].startswith(target_time_str[:16]):
                 result.append(row)
         return result
