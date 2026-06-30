@@ -915,35 +915,21 @@ async def cancel_booking_app(callback: CallbackQuery):
     
     if success:
         await callback.message.answer("✅ Отменено", reply_markup=get_main_keyboard())
-        
-        # Уведомление ВСЕМ админам
-        for admin_id in ADMIN_IDS:
-            try:
-                admin_text = (
-                    f"❌ <b>Отмена записи!</b>\n\n"
-                    f"Пользователь: @{appointment['username'] or 'без юзернейма'}\n"
-                    f"Телефон: {appointment['phone']}\n"
-                    f"Время: {appointment['slot_start'].replace('T', ' ')[:16]}\n"
-                    f"Услуга: {appointment['service_name']}"
-                )
-                await callback.bot.send_message(admin_id, admin_text, parse_mode="HTML")
-            except:
-                pass
-    else:
+
         await callback.message.answer("❌ Ошибка", reply_markup=get_main_keyboard())
     await callback.answer()
         
         # Уведомление ВСЕМ админам
-        for admin_id in ADMIN_IDS:
-            try:
-                admin_text = (
+   for admin_id in ADMIN_IDS:
+       try:
+           admin_text = (
                     f"❌ <b>Отмена записи!</b>\n\n"
                     f"Пользователь: @{appointment['username'] or 'без юзернейма'}\n"
                     f"Телефон: {appointment['phone']}\n"
                     f"Время: {appointment['slot_start'].replace('T', ' ')[:16]}\n"
                     f"Услуга: {appointment['service_name']}"
                 )
-                await callback.bot.send_message(admin_id, admin_text, parse_mode="HTML")
+           await callback.bot.send_message(admin_id, admin_text, parse_mode="HTML")
             except:
                 pass
     else:
