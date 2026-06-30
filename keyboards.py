@@ -29,15 +29,14 @@ def get_services_keyboard(services):
 
 def get_dates_keyboard(available_dates):
     builder = InlineKeyboardBuilder()
-    for date_str, weekday in available_dates:
+    for date_str, display_str in available_dates:  # <--- ИЗМЕНИТЬ
         builder.button(
-            text=f"{weekday}, {date_str}",
+            text=display_str,  # <--- ИЗМЕНИТЬ
             callback_data=f"date_{date_str}"
         )
     builder.button(text="🔙 Назад", callback_data="back_to_services")
     builder.adjust(2)
     return builder.as_markup()
-
 def get_time_keyboard(time_slots):
     builder = InlineKeyboardBuilder()
     for slot in time_slots:
