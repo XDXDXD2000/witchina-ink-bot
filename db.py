@@ -70,26 +70,44 @@ class Database:
 
     def get_user_appointments(self, user_id: int) -> List[Dict[str, Any]]:
         response = self.supabase.table('appointments')\
-            .select('*, services(name as service_name, price)')\
+            .select('*, service_id, services(name, price)')\
             .eq('user_id', user_id)\
             .eq('status', 'booked')\
             .execute()
+        
+        for row in response.data:
+            if 'services' in row:
+                row['service_name'] = row['services']['name']
+                row['price'] = row['services']['price']
+                del row['services']
         return response.data
 
     def get_all_appointments(self) -> List[Dict[str, Any]]:
         response = self.supabase.table('appointments')\
-            .select('*, services(name as service_name)')\
+            .select('*, service_id, services(name)')\
             .eq('status', 'booked')\
             .order('slot_start')\
             .execute()
+        
+        for row in response.data:
+            if 'services' in row:
+                row['service_name'] = row['services']['name']
+                del row['services']
         return response.data
 
     def get_appointment_by_id(self, appointment_id: int) -> Optional[Dict[str, Any]]:
         response = self.supabase.table('appointments')\
-            .select('*, services(name as service_name)')\
+            .select('*, service_id, services(name)')\
             .eq('id', appointment_id)\
             .execute()
-        return response.data[0] if response.data else None
+        
+        if response.data:
+            row = response.data[0]
+            if 'services' in row:
+                row['service_name'] = row['services']['name']
+                del row['services']
+            return row
+        return None
 
     def cancel_appointment(self, appointment_id: int, user_id: int) -> bool:
         response = self.supabase.table('appointments')\

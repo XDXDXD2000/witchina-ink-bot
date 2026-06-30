@@ -62,7 +62,7 @@ async def get_cached_services():
     global _services_cache, _services_cache_time
     now = datetime.now()
     if _services_cache_time is None or (now - _services_cache_time).seconds > 3600:
-        _services_cache = await db.get_services()
+        _services_cache = db.get_services()
         _services_cache_time = now
     return _services_cache
 
@@ -70,7 +70,7 @@ async def get_cached_users():
     global _users_cache, _users_cache_time
     now = datetime.now()
     if _users_cache_time is None or (now - _users_cache_time).seconds > 300:
-        _users_cache = await db.get_all_users()
+        _users_cache = db.get_all_users()
         _users_cache_time = now
     return _users_cache
 
@@ -108,7 +108,7 @@ def get_available_dates():
         weekday = weekdays_short[date.weekday()]
         
         date_str = date.strftime("%Y-%m-%d")
-        display_str = f"{weekday} {day}.{month}"  # Пример: "ПН 6.июл"
+        display_str = f"{weekday} {day}.{month}"
         dates.append((date_str, display_str))
     return dates
 
@@ -502,7 +502,7 @@ async def choose_service(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(BookingStates.choosing_date, F.data.startswith("date_"))
 async def choose_date(callback: CallbackQuery, state: FSMContext):
     date_str = callback.data.split("_")[1]
-    slots = await db.get_free_slots(date_str)
+    slots = db.get_free_slots(date_str)
     if not slots:
         dates = get_available_dates()
         await callback.message.delete()
@@ -633,7 +633,7 @@ async def confirm_booking(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
     username = callback.from_user.username or callback.from_user.full_name
     
-    appointment_id = await db.book_appointment(
+    appointment_id = db.book_appointment(
         user_id=user_id,
         username=username,
         phone=data.get("phone"),
@@ -692,7 +692,7 @@ async def cancel_booking(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == "my_bookings")
 async def my_bookings(callback: CallbackQuery):
     user_id = callback.from_user.id
-    appointments = await db.get_user_appointments(user_id)
+    appointments = db.get_user_appointments(user_id)
     if not appointments:
         await callback.message.delete()
         await callback.message.answer("📋 Нет записей", reply_markup=get_main_keyboard())
@@ -722,9 +722,9 @@ async def cancel_booking_app(callback: CallbackQuery):
     appointment_id = int(callback.data.split("_")[1])
     user_id = callback.from_user.id
     
-    appointment = await db.get_appointment_by_id(appointment_id)
+    appointment = db.get_appointment_by_id(appointment_id)
     
-    success = await db.cancel_appointment(appointment_id, user_id)
+    success = db.cancel_appointment(appointment_id, user_id)
     await callback.message.delete()
     
     if success:
@@ -766,7 +766,7 @@ async def reviews_menu(callback: CallbackQuery):
 
 @router.callback_query(F.data == "show_reviews")
 async def show_reviews(callback: CallbackQuery):
-    reviews = await db.get_approved_reviews(10)
+    reviews = db.get_approved_reviews(10)
     if not reviews:
         await callback.message.delete()
         await callback.message.answer("😅 Пока нет отзывов", reply_markup=get_back_keyboard())
@@ -788,7 +788,7 @@ async def show_reviews(callback: CallbackQuery):
 @router.callback_query(F.data == "write_review")
 async def write_review(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
-    if await db.check_user_reviewed(user_id):
+    if db.check_user_reviewed(user_id):
         await callback.message.delete()
         await callback.message.answer("😅 Ты уже писал отзыв!", reply_markup=get_back_keyboard())
         await callback.answer()
@@ -826,7 +826,7 @@ async def review_text(message: Message, state: FSMContext):
     user_id = message.from_user.id
     username = message.from_user.username or message.from_user.full_name
     
-    await db.add_review(user_id=user_id, username=username, rating=rating, text=message.text)
+    db.add_review(user_id=user_id, username=username, rating=rating, text=message.text)
     await state.clear()
     await message.answer("✅ Спасибо! Отзыв пройдёт модерацию.", reply_markup=get_main_keyboard())
     
@@ -845,7 +845,7 @@ async def moderate_reviews(callback: CallbackQuery):
         await callback.answer("⛔ Только для админа!", show_alert=True)
         return
     
-    pending = await db.get_pending_reviews()
+    pending = db.get_pending_reviews()
     if not pending:
         await callback.message.delete()
         await callback.message.answer("✅ Нет отзывов", reply_markup=get_back_keyboard())
@@ -867,7 +867,7 @@ async def review_detail(callback: CallbackQuery):
         return
     
     review_id = int(callback.data.split("_")[1])
-    pending = await db.get_pending_reviews()
+    pending = db.get_pending_reviews()
     review = next((r for r in pending if r["id"] == review_id), None)
     
     if not review:
@@ -898,7 +898,7 @@ async def approve_review(callback: CallbackQuery):
         return
     
     review_id = int(callback.data.split("_")[1])
-    success = await db.moderate_review(review_id, "approved")
+    success = db.moderate_review(review_id, "approved")
     await callback.message.delete()
     await callback.message.answer("✅ Одобрено" if success else "❌ Ошибка", reply_markup=get_back_keyboard())
     await callback.answer()
@@ -910,7 +910,7 @@ async def reject_review(callback: CallbackQuery):
         return
     
     review_id = int(callback.data.split("_")[1])
-    success = await db.moderate_review(review_id, "rejected")
+    success = db.moderate_review(review_id, "rejected")
     await callback.message.delete()
     await callback.message.answer("❌ Отклонено" if success else "❌ Ошибка", reply_markup=get_back_keyboard())
     await callback.answer()
@@ -923,7 +923,7 @@ async def admin_all_bookings(callback: CallbackQuery):
         await callback.answer("⛔ Только для админа!", show_alert=True)
         return
     
-    appointments = await db.get_all_appointments()
+    appointments = db.get_all_appointments()
     
     if not appointments:
         await callback.message.delete()
