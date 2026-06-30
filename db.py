@@ -168,6 +168,20 @@ class Database:
                 rows = await cursor.fetchall()
                 return [dict(row) for row in rows]
 
+    async def get_appointment_by_id(self, appointment_id: int) -> Optional[Dict[str, Any]]:
+        """Получить запись по ID"""
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            query = """
+                SELECT a.*, s.name as service_name
+                FROM appointments a
+                JOIN services s ON a.service_id = s.id
+                WHERE a.id = ?
+            """
+            async with db.execute(query, (appointment_id,)) as cursor:
+                row = await cursor.fetchone()
+                return dict(row) if row else None
+
     async def get_all_users(self) -> List[Dict[str, Any]]:
         """Для рассылки: все пользователи"""
         async with aiosqlite.connect(self.db_path) as db:
