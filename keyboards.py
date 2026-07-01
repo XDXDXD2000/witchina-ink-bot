@@ -18,10 +18,12 @@ def get_main_keyboard():
 def get_services_keyboard(services):
     builder = InlineKeyboardBuilder()
     for service in services:
-        price_str = f"{service.price} руб." if service.price > 0 else "БЕСПЛАТНО"
+        # Теперь service — это словарь, обращаемся по ключам
+        price = service.get('price', 0)
+        price_str = f"{price} руб." if price > 0 else "БЕСПЛАТНО"
         builder.button(
-            text=f"{service.name} ({service.duration_minutes} мин, {price_str})",
-            callback_data=f"service_{service.id}"
+            text=f"{service.get('name', 'Услуга')} ({service.get('duration_minutes', 0)} мин, {price_str})",
+            callback_data=f"service_{service.get('id', 0)}"
         )
     builder.button(text="🔙 Назад", callback_data="back_to_main")
     builder.adjust(1)

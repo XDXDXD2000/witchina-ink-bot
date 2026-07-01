@@ -602,8 +602,8 @@ async def enter_description(message: Message, state: FSMContext):
     
     services = await get_cached_services()
     service = next((s for s in services if s.id == service_id), None)
-    service_name = service.name if service else "Неизвестная"
-    service_price = service.price if service else 0
+    service_name = service.get('name', 'Неизвестная') if service else "Неизвестная"
+    service_price = service.get('price', 0) if service else 0
     
     slot_dt = datetime.fromisoformat(slot_iso)
     slot_str = slot_dt.strftime("%d.%m.%Y в %H:%M")
