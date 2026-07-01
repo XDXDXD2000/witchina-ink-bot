@@ -601,9 +601,11 @@ async def enter_description(message: Message, state: FSMContext):
     discount = data.get("discount", 0)
     
     services = await get_cached_services()
-    service = next((s for s in services if s.id == service_id), None)
-    service_name = service.get('name', 'Неизвестная') if service else "Неизвестная"
-    service_price = service.get('price', 0) if service else 0
+    service = next((s for s in services if s.get('id') == service_id), None)  # <--- ИСПРАВЛЕНО
+    service_name = service.get('name', 'Неизвестная') if service else "Неизвестная"  # <--- ИСПРАВЛЕНО
+    service_price = service.get('price', 0) if service else 0  # <--- ИСПРАВЛЕНО
+    
+    # ... остальной код
     
     slot_dt = datetime.fromisoformat(slot_iso)
     slot_str = slot_dt.strftime("%d.%m.%Y в %H:%M")
